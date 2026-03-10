@@ -569,10 +569,7 @@ impl BinaryReader for BytesReader {
   fn seek(&mut self, seek: SeekFrom) -> std::result::Result<u64, Error> {
     match seek {
       SeekFrom::Start(pos) => {
-        if pos >= usize::MAX as u64 {
-          let s = format!("BytesReader max offset is usize length but set {}", pos);
-          return Err(Error::new(ErrorKind::Other, s));
-        } else if pos >= self.buffer.len() as u64 {
+        if pos > self.buffer.len() as u64 {
           let s = format!(
             "set offset {},but buffer length is{}",
             pos,
@@ -585,7 +582,7 @@ impl BinaryReader for BytesReader {
       }
       SeekFrom::End(pos_) => {
         let pos = self.buffer.len() as i64 + pos_;
-        if pos < 0 || pos >= (self.buffer.len() as i64) {
+        if pos < 0 || pos > (self.buffer.len() as i64) {
           let s = format!(
             "set offset {},but buffer length is {}",
             pos,
@@ -598,10 +595,7 @@ impl BinaryReader for BytesReader {
       }
       SeekFrom::Current(pos) => {
         let ptr = (self.ptr as i64) + pos;
-        if ptr >= usize::MAX as i64 {
-          let s = format!("BytesReader max offset is usize length but set {}", ptr);
-          return Err(Error::new(ErrorKind::Other, s));
-        } else if self.buffer.len() as i64 <= ptr || ptr < 0 {
+        if (self.buffer.len() as i64) < ptr || ptr < 0 {
           let s = format!(
             "set offset {},but buffer length is{}",
             ptr,

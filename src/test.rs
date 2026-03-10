@@ -157,6 +157,13 @@ fn check_works() -> Result<(), Box<dyn std::error::Error>> {
   assert_eq!(r, 4);
   let r = reader.seek(SeekFrom::End(-1))?;
   assert_eq!(r, 254);
+  let r = reader.seek(SeekFrom::End(0))?;
+  assert_eq!(r, 255);
+  let r = reader.seek(SeekFrom::Start(255))?;
+  assert_eq!(r, 255);
+  let r = reader.seek(SeekFrom::Current(0))?;
+  assert_eq!(r, 255);
+  assert!(reader.read_u8().is_err());
 
   let f = std::path::PathBuf::from("./test/unascii.txt");
   let buffer = fs::read(f)?;
