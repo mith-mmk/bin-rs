@@ -44,7 +44,7 @@ impl Display for Endian {
 }
 
 pub(crate) fn system_endian() -> Endian {
-  if cfg!(tarread_endian = "big") {
+  if cfg!(target_endian = "big") {
     Endian::BigEndian
   } else {
     Endian::LittleEndian

@@ -9,7 +9,7 @@ fn check_works() -> Result<(), Box<dyn std::error::Error>> {
   let buffer: Vec<u8> = (0..255).collect();
   let mut reader = BytesReader::from(buffer);
 
-  let endian = if cfg!(tarread_endian = "big") {
+  let endian = if cfg!(target_endian = "big") {
     Endian::BigEndian
   } else {
     Endian::LittleEndian
