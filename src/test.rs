@@ -488,6 +488,27 @@ pub async fn check_async() -> Result<(), Box<dyn std::error::Error>> {
   let r = reader.read_f64().await?;
   assert_eq!(r, -17.19);
 
+  let buffer: Vec<u8> = (0..255).collect();
+  let mut reader = AsyncBytesReader::new(Cursor::new(buffer));
+  reader.set_endian(Endian::BigEndian);
+  let r = reader.read_u16().await?;
+  assert_eq!(r, 0x0001);
+  reader.set_endian(Endian::LittleEndian);
+  let r = reader.read_u16().await?;
+  assert_eq!(r, 0x0302);
+
+  let r = reader.offset().await?;
+  assert_eq!(r, 4);
+  let r = reader.seek(SeekFrom::End(-1)).await?;
+  assert_eq!(r, 254);
+  let r = reader.seek(SeekFrom::End(0)).await?;
+  assert_eq!(r, 255);
+  let r = reader.seek(SeekFrom::Start(255)).await?;
+  assert_eq!(r, 255);
+  let r = reader.seek(SeekFrom::Current(0)).await?;
+  assert_eq!(r, 255);
+  assert!(reader.read_u8().await.is_err());
+
   Ok(())
 }
 

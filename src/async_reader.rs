@@ -4,8 +4,11 @@
 
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncBufReadExt;
+use tokio::io::AsyncSeek;
+use tokio::io::AsyncSeekExt;
 type Error = Box<dyn std::error::Error>;
 use std::io::ErrorKind;
+use std::io::SeekFrom;
 use crate::Endian;
 
 /// using AsyncBytesReader feature async only
@@ -369,6 +372,16 @@ impl<R: AsyncBufReadExt + Send + std::marker::Unpin>  AsyncBytesReader<R> {
         let mut array :Vec<u8> = (0..size).map(|_| 0).collect();
         self.reader.read_exact(&mut array).await?;
         Ok(size)
+    }
+}
+
+impl<R: AsyncBufReadExt + AsyncSeek + Send + std::marker::Unpin> AsyncBytesReader<R> {
+    pub async fn offset(&mut self) -> Result<u64, Error> {
+        Ok(self.reader.stream_position().await?)
+    }
+
+    pub async fn seek(&mut self, seek: SeekFrom) -> Result<u64, Error> {
+        Ok(self.reader.seek(seek).await?)
     }
 }
 

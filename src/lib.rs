@@ -3,7 +3,7 @@
 
 pub mod reader;
 #[cfg(feature = "async")]
-pub use async_reader;
+pub mod async_reader;
 pub mod endian;
 #[cfg(feature = "util")]
 pub mod io;
