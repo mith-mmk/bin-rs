@@ -27,7 +27,11 @@ impl BytesReader {
   }
 
   fn check_bound(&mut self, size: usize) -> Result<(), Error> {
-    if self.ptr + size > self.buffer.len() {
+    if self
+      .ptr
+      .checked_add(size)
+      .map_or(true, |end| end > self.buffer.len())
+    {
       let s = format!(
         "ountbound call ptr {} + {} but buffer length {}",
         self.ptr,
@@ -581,8 +585,8 @@ impl BinaryReader for BytesReader {
         Ok(self.ptr as u64)
       }
       SeekFrom::End(pos_) => {
-        let pos = self.buffer.len() as i64 + pos_;
-        if pos < 0 || pos > (self.buffer.len() as i64) {
+        let pos = self.buffer.len() as i128 + pos_ as i128;
+        if pos < 0 || pos > self.buffer.len() as i128 {
           let s = format!(
             "set offset {},but buffer length is {}",
             pos,
@@ -594,8 +598,8 @@ impl BinaryReader for BytesReader {
         Ok(self.ptr as u64)
       }
       SeekFrom::Current(pos) => {
-        let ptr = (self.ptr as i64) + pos;
-        if (self.buffer.len() as i64) < ptr || ptr < 0 {
+        let ptr = self.ptr as i128 + pos as i128;
+        if (self.buffer.len() as i128) < ptr || ptr < 0 {
           let s = format!(
             "set offset {},but buffer length is{}",
             ptr,

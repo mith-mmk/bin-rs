@@ -9,10 +9,6 @@ bin-rs = { path = "..", features = ["async", "util"] }
 tokio = { version = "1", features = ["io-util", "macros", "rt"] }
 
 [[test]]
-name = "bytes_reader"
-path = "bytes_reader.rs"
-
-[[test]]
 name = "async_reader"
 path = "async_reader.rs"
 

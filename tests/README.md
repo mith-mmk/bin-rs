@@ -17,6 +17,8 @@ cargo test --release --features stream,async,serde,util
 - `stream_peek.rs` checks small/zero-capacity buffers, partially consumed buffers,
   repeated peeks, EOF, short/interrupted reads, failed reads and seeks, impossible
   allocations, and no-I/O empty peeks.
+- `bytes_reader_bounds.rs` covers overflowing lengths and extreme signed seeks,
+  ensuring rejection without moving the position in both debug and release.
 - `async_reader_edges.rs` is enabled by `async`. It covers numeric boundaries,
   floating-point bit patterns, short buffers, offsets, EOF, string errors, and
   the currently supported buffered peek path.

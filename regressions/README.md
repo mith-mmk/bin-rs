@@ -13,19 +13,20 @@ cargo test --manifest-path regressions/Cargo.toml --no-fail-fast
 cargo test --release --manifest-path regressions/Cargo.toml --no-fail-fast
 ```
 
-Observed on 2026-11-10: debug has 16 failures (3 BytesReader, 3 async, 10 util).
-Release has 14 failures and 2 passes. It still incorrectly accepts the oversized
-skip; the extreme signed seeks return errors rather than panicking in release.
+After the BytesReader bounds fix: 13 failures remain in both debug and release
+(3 async, 10 util). The original 3 BytesReader regressions now run in the regular
+suite, along with broader extreme-length and signed-seek checks.
 
-## BytesReader: overflow before bounds checking
+## Fixed: BytesReader overflow before bounds checking
 
-- `skip_ptr(usize::MAX)` after consuming one byte panics in debug. In release
-  the addition wraps, the request succeeds, and the position wraps back to zero.
+- `skip_ptr(usize::MAX)` after consuming one byte previously panicked in debug.
+  In release the addition wrapped, the request succeeded, and the position
+  wrapped back to zero.
 - `SeekFrom::Current(i64::MAX)` at position one and
-  `SeekFrom::End(i64::MAX)` on a nonempty buffer panic in debug.
+  `SeekFrom::End(i64::MAX)` on a nonempty buffer previously panicked in debug.
 
-These inputs require no large allocation. Errors should leave the position
-unchanged in both profiles.
+These inputs require no large allocation. They now return errors and leave the
+position unchanged in both profiles. See `tests/bytes_reader_bounds.rs`.
 
 ## AsyncBytesReader: peek boundaries and buffer size
 
