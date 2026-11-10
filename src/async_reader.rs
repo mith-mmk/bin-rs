@@ -57,9 +57,16 @@ impl<R: AsyncBufReadExt + Send + std::marker::Unpin>  AsyncBytesReader<R> {
         Ok(array)
     }
 
+    /// Peeks within the reader's current buffered window without consuming bytes.
+    ///
+    /// A request larger than that window returns an error, even if more input
+    /// exists. A zero-length request succeeds without polling the reader.
     pub async fn read_bytes_no_move(&mut self,len: usize) -> Result<Vec<u8>,Error>{
+        if len == 0 {
+            return Ok(Vec::new());
+        }
         let buffer = self.reader.fill_buf().await?;
-        if buffer.len() <= len {
+        if buffer.len() < len {
             let err = "Data shotage";
             return Err(Box::new(std::io::Error::new(ErrorKind::Other,err)));
         }

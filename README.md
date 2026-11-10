@@ -6,3 +6,8 @@
 - 0.0.8 ... yark
 - 0.0.9 ... Stream supoort/ read utf16 support
 - 0.0.10 ... Some Bug fix, tested async on tokio
+- 0.0.11 ... Buffered lookahead, reader overflow, numeric/string utility and async boundary fixes. See [release notes](CHANGELOG.md).
+
+## Tests
+
+See [test coverage and commands](tests/README.md), including the explicitly failing known-regression suite.
