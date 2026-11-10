@@ -4,6 +4,7 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Cursor;
 use std::io::Error;
+#[cfg(feature = "codec")]
 use std::io::ErrorKind;
 /// 0.0.8 Enable support for target_family other than "wasm", feature "stream" is disabled.
 ///
@@ -100,19 +101,27 @@ impl<R: BufRead + Seek> BinaryReader for StreamReader<R> {
     Ok(array)
   }
 
-  // This function read bytes and does not move pointer.
-  // However it's behavior dependences read buffer size.
+  /// Reads exactly `len` bytes without advancing the logical stream position.
+  ///
+  /// If the buffered window is too small, reads across buffer boundaries and
+  /// seeks back, including after a read error. Truncated input returns
+  /// `UnexpectedEof`. If restoring the position fails, returns that seek error
+  /// instead; the position can no longer be guaranteed in that case.
   fn read_bytes_no_move(&mut self, len: usize) -> Result<Vec<u8>, Error> {
-    let buffer = self.reader.fill_buf()?;
-    if buffer.len() < len {
-      let err = format!(
-        "Data shotage,request {} but read {} bytes",
-        len,
-        buffer.len()
-      );
-      return Err(Error::new(ErrorKind::Other, err));
+    if len == 0 {
+      return Ok(Vec::new());
     }
-    let array: Vec<u8> = (0..len).map(|i| buffer[i]).collect();
+
+    let buffer = self.reader.fill_buf()?;
+    if buffer.len() >= len {
+      return Ok(buffer[..len].to_vec());
+    }
+
+    let position = self.reader.stream_position()?;
+    let mut array = vec![0; len];
+    let result = self.reader.read_exact(&mut array);
+    self.reader.seek(std::io::SeekFrom::Start(position))?;
+    result?;
     Ok(array)
   }
 
