@@ -202,3 +202,31 @@ fn empty_peek_performs_no_io_and_fill_errors_propagate() -> io::Result<()> {
   assert_eq!(source.seeks, 0);
   Ok(())
 }
+
+#[test]
+fn impossible_peek_allocation_returns_error_without_consuming() -> io::Result<()> {
+  for capacity in [0, 1, 8] {
+    let mut reader = StreamReader::new(BufReader::with_capacity(capacity, Cursor::new(b"abc")));
+    assert_eq!(reader.read_u8()?, b'a');
+    assert!(reader.read_bytes_no_move(usize::MAX).is_err());
+    assert_eq!(reader.offset()?, 1);
+    assert_eq!(reader.read_bytes_no_move(2)?, b"bc");
+    assert_eq!(reader.read_bytes_as_vec(2)?, b"bc");
+  }
+  Ok(())
+}
+
+#[test]
+fn peek_beyond_eof_restores_the_original_position() -> io::Result<()> {
+  let mut reader = StreamReader::new(BufReader::with_capacity(1, Cursor::new(b"abc")));
+  assert_eq!(reader.seek(SeekFrom::Start(10))?, 10);
+  assert!(reader.read_bytes_no_move(0)?.is_empty());
+  assert_eq!(
+    reader.read_bytes_no_move(1).unwrap_err().kind(),
+    io::ErrorKind::UnexpectedEof
+  );
+  assert_eq!(reader.offset()?, 10);
+  reader.seek(SeekFrom::Start(0))?;
+  assert_eq!(reader.read_bytes_no_move(3)?, b"abc");
+  Ok(())
+}

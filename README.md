@@ -6,3 +6,7 @@
 - 0.0.8 ... yark
 - 0.0.9 ... Stream supoort/ read utf16 support
 - 0.0.10 ... Some Bug fix, tested async on tokio
+
+## Tests
+
+See [test coverage and commands](tests/README.md), including the explicitly failing known-regression suite.

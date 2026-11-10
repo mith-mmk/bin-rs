@@ -118,7 +118,11 @@ impl<R: BufRead + Seek> BinaryReader for StreamReader<R> {
     }
 
     let position = self.reader.stream_position()?;
-    let mut array = vec![0; len];
+    let mut array = Vec::new();
+    array
+      .try_reserve_exact(len)
+      .map_err(|err| Error::new(std::io::ErrorKind::Other, err))?;
+    array.resize(len, 0);
     let result = self.reader.read_exact(&mut array);
     self.reader.seek(std::io::SeekFrom::Start(position))?;
     result?;
