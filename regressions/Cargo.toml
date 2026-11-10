@@ -5,15 +5,11 @@ edition = "2021"
 publish = false
 
 [dependencies]
-bin-rs = { path = "..", features = ["async", "util"] }
+bin-rs = { path = "..", features = ["async"] }
 tokio = { version = "1", features = ["io-util", "macros", "rt"] }
 
 [[test]]
 name = "async_reader"
 path = "async_reader.rs"
-
-[[test]]
-name = "util"
-path = "util.rs"
 
 [workspace]

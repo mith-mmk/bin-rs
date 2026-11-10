@@ -1,6 +1,6 @@
 #![cfg(feature = "util")]
 
-use bin_rs::{io::*, Endian};
+use bin_rs::{io, io::*, Endian};
 
 // Slice utilities require callers to provide a sufficiently large buffer.
 // Invalid slices are deliberately not assigned a new error-handling contract here.
@@ -164,7 +164,6 @@ integer_reads!(
 
 #[test]
 fn i16_big_endian_reads() {
-  // Little-endian i16, i8, and 128-bit read defects are reported separately.
   for value in [i16::MIN, -12345, -1, 0, 1, i16::MAX] {
     let mut bytes = vec![0xa5];
     bytes.extend_from_slice(&value.to_be_bytes());
@@ -301,5 +300,151 @@ fn utf16_decodes_surrogates_lossily_and_stops_at_nul() {
       }
       assert_eq!(read_utf16_string(&bytes, 0, bytes.len(), endian), expected);
     }
+  }
+}
+
+#[test]
+fn signed_byte_reads_value_not_address() {
+  let bytes = [0x80; 256];
+  for offset in 0..bytes.len() {
+    assert_eq!(io::read_i8(&bytes, offset), -128, "offset {offset}");
+  }
+}
+#[test]
+fn signed_little_endian_16_preserves_minimum() {
+  assert_eq!(io::read_i16_le(&[0, 0x80], 0), i16::MIN);
+}
+#[test]
+fn signed_little_endian_dispatch_preserves_minimum() {
+  assert_eq!(io::read_i16(&[0, 0x80], 0, Endian::LittleEndian), i16::MIN);
+}
+macro_rules! wide_read {
+  ($name:ident, $read:ident, $ty:ty, $encoding:ident) => {
+    #[test]
+    fn $name() {
+      let value: $ty = 0x0123456789abcdeffedcba9876543210;
+      let mut bytes = vec![0xa5];
+      bytes.extend_from_slice(&value.$encoding());
+      assert_eq!(io::$read(&bytes, 1), value);
+    }
+  };
+}
+wide_read!(u128_be_distinct_halves, read_u128_be, u128, to_be_bytes);
+wide_read!(u128_le_distinct_halves, read_u128_le, u128, to_le_bytes);
+wide_read!(i128_be_distinct_halves, read_i128_be, i128, to_be_bytes);
+wide_read!(i128_le_distinct_halves, read_i128_le, i128, to_le_bytes);
+#[test]
+fn ascii_honors_offset_and_length() {
+  assert_eq!(io::read_ascii_string(b"xABCz", 1, 3), "ABC");
+}
+#[test]
+fn utf16_honors_zero_length() {
+  assert_eq!(
+    io::read_utf16_string(&[0, b'A'], 0, 0, Endian::BigEndian),
+    ""
+  );
+}
+#[test]
+fn utf16_valid_nonzero_offset_does_not_overrun() {
+  assert_eq!(
+    io::read_utf16_string(&[0xff, 0xff, 0, b'A'], 2, 2, Endian::BigEndian),
+    "A"
+  );
+}
+
+integer_reads!(
+  i16_reads,
+  read_i16,
+  read_i16_be,
+  read_i16_le,
+  [i16::MIN, -12345, -1, 0, 1, i16::MAX]
+);
+integer_reads!(
+  u128_reads,
+  read_u128,
+  read_u128_be,
+  read_u128_le,
+  [
+    0u128,
+    1,
+    1 << 64,
+    0x0123456789abcdeffedcba9876543210,
+    u128::MAX
+  ]
+);
+integer_reads!(
+  i128_reads,
+  read_i128,
+  read_i128_be,
+  read_i128_le,
+  [
+    i128::MIN,
+    -0x0123456789abcdeffedcba9876543210,
+    -1,
+    0,
+    1,
+    1 << 64,
+    i128::MAX
+  ]
+);
+
+#[test]
+fn signed_byte_reads_all_values_at_boundaries() {
+  for byte in 0..=u8::MAX {
+    assert_eq!(read_i8(&[byte], 0), byte as i8);
+    assert_eq!(read_i8(&[0xa5, byte], 1), byte as i8);
+    assert_eq!(read_i8(&[0xa5, byte, 0xcc], 1), byte as i8);
+  }
+}
+
+#[test]
+fn ascii_preserves_nul_and_high_bytes_within_range() {
+  assert_eq!(read_ascii_string(&[], 0, 0), "");
+  assert_eq!(read_ascii_string(b"x", 1, 0), "");
+  assert_eq!(read_ascii_string(b"xABC", 1, 3), "ABC");
+  assert_eq!(read_ascii_string(b"x\0A\x80\xffz", 1, 4), "\0A\u{80}\u{ff}");
+  for byte in 0..=u8::MAX {
+    assert_eq!(
+      read_ascii_string(&[0xa5, byte, 0xcc], 1, 1),
+      char::from(byte).to_string()
+    );
+  }
+}
+
+#[test]
+fn utf16_limits_are_bytes_and_ignore_incomplete_units() {
+  for endian in [Endian::BigEndian, Endian::LittleEndian] {
+    for offset in [0, 1, 2, 3] {
+      let mut bytes = vec![0xa5; offset];
+      for unit in [0x0041, 0x65e5, 0xd83d, 0xde00, 0, 0x0042] {
+        write_u16(unit, &mut bytes, endian);
+      }
+      for (length, expected) in [
+        (0, ""),
+        (1, ""),
+        (2, "A"),
+        (3, "A"),
+        (4, "A\u{65e5}"),
+        (5, "A\u{65e5}"),
+        (6, "A\u{65e5}\u{fffd}"),
+        (7, "A\u{65e5}\u{fffd}"),
+        (8, "A\u{65e5}\u{1f600}"),
+        (9, "A\u{65e5}\u{1f600}"),
+        (10, "A\u{65e5}\u{1f600}"),
+        (11, "A\u{65e5}\u{1f600}"),
+        (12, "A\u{65e5}\u{1f600}"),
+      ] {
+        assert_eq!(read_utf16_string(&bytes, offset, length, endian), expected);
+        // The same range ending at EOF must not inspect trailing neighbors.
+        assert_eq!(
+          read_utf16_string(&bytes[..offset + length], offset, length, endian),
+          expected
+        );
+      }
+      assert_eq!(read_utf16_string(&bytes, bytes.len(), 0, endian), "");
+      assert_eq!(read_utf16_string(&bytes, offset + 8, 4, endian), "");
+    }
+    assert_eq!(read_utf16_string(&[], 0, 0, endian), "");
+    assert_eq!(read_utf16_string(&[0xff], 0, 1, endian), "");
   }
 }

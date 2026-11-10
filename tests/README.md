@@ -24,13 +24,16 @@ cargo test --release --features stream,async,serde,util
   the currently supported buffered peek path.
 - `util_edges.rs` is enabled by `util`. It covers endian conversion, numeric
   writers, valid ranges, floating-point bits, strings, and surrounding bytes.
+  It also includes the 10 resolved util regressions and verifies signed minima,
+  distinct 128-bit halves, byte-based string limits, NULs, and lossy UTF-16.
   Slice utility functions do not return `Result`; callers must supply valid
   ranges. Tests do not invent an error contract for invalid slices.
 
 ## Known failures are not passing coverage
 
 The edge-case audit also found pre-existing bugs that are not fixed by the
-StreamReader lookahead change. Their executable assertions live in the separate
+StreamReader lookahead, BytesReader bounds, and util fixes. Their executable
+assertions live in the separate
 [known-regression suite](../regressions/README.md). It deliberately fails when
 run and is not included by the root package's ordinary `cargo test`. No tests
 are marked `ignore` or `should_panic` to make these bugs look successful.

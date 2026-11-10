@@ -13,9 +13,10 @@ cargo test --manifest-path regressions/Cargo.toml --no-fail-fast
 cargo test --release --manifest-path regressions/Cargo.toml --no-fail-fast
 ```
 
-After the BytesReader bounds fix: 13 failures remain in both debug and release
-(3 async, 10 util). The original 3 BytesReader regressions now run in the regular
-suite, along with broader extreme-length and signed-seek checks.
+After the BytesReader and util fixes on 2026-11-10: 3 async failures remain
+in both debug and release. The original 3 BytesReader and 10 util regressions
+now run in the regular suite, alongside expanded boundary coverage.
+
 
 ## Fixed: BytesReader overflow before bounds checking
 
@@ -39,14 +40,14 @@ API/design decision: the current async peek method does not require `AsyncSeek`,
 so the synchronous seek/restore fix cannot simply be copied without affecting
 which readers are accepted.
 
-## util: incorrect values and range handling
+## Resolved util regressions
 
-- `read_i8` casts a byte's address rather than reading its value.
-- `read_i16_le` (and its endian-dispatch path) uses big-endian byte order.
-- All four signed/unsigned 128-bit readers read the first eight bytes twice.
-- `read_ascii_string` ignores its offset and length.
-- `read_utf16_string` ignores its length. Even an in-bounds nonzero-offset
-  request can then panic by reading beyond the provided slice.
-
-All util repros provide valid input ranges. They are not tests of unsupported
-out-of-range calls. None of these source functions is modified by this PR.
+All 10 former `util.rs` repros now live in the regular `tests/util_edges.rs`
+suite, alongside expanded boundary coverage. The fixes read signed bytes by
+value, use little-endian order for signed 16-bit values, read both halves of
+128-bit values, and honor the byte offset and byte length for ASCII and UTF-16.
+ASCII continues to map every byte to its same Unicode code point, including
+embedded NUL and high bytes. UTF-16 remains lossy, stops at a NUL code unit, and
+ignores an odd trailing byte. Its length is in bytes, consistent with the
+BinaryReader UTF-16 API and the original full-buffer tests. Slice callers must
+provide an in-bounds requested range; no new fallible API is introduced.

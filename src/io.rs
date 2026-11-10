@@ -28,7 +28,7 @@ pub fn read_byte(buf: &[u8], ptr: usize) -> u8 {
 #[allow(unused)]
 #[inline]
 pub fn read_i8(buf: &[u8], ptr: usize) -> i8 {
-  ((&buf[ptr]) as *const u8) as i8
+  buf[ptr] as i8
 }
 
 #[allow(unused)]
@@ -90,7 +90,7 @@ pub fn read_i64_be(buf: &[u8], ptr: usize) -> i64 {
 #[allow(unused)]
 #[inline]
 pub fn read_i16_le(buf: &[u8], ptr: usize) -> i16 {
-  unsafe { ((buf[ptr] as u16) << 8 | (buf[ptr + 1] as u16)) as i16 }
+  read_u16_le(buf, ptr) as i16
 }
 
 #[allow(unused)]
@@ -217,7 +217,7 @@ pub fn read_u128(buf: &[u8], ptr: usize, endian: Endian) -> u128 {
 #[inline]
 pub fn read_u128_be(buf: &[u8], ptr: usize) -> u128 {
   let b0 = read_u64_be(buf, ptr);
-  let b1 = read_u64_be(buf, ptr);
+  let b1 = read_u64_be(buf, ptr + 8);
   ((b0 as u128) << 64) | b1 as u128
 }
 
@@ -225,7 +225,7 @@ pub fn read_u128_be(buf: &[u8], ptr: usize) -> u128 {
 #[inline]
 pub fn read_u128_le(buf: &[u8], ptr: usize) -> u128 {
   let b0 = read_u64_le(buf, ptr);
-  let b1 = read_u64_le(buf, ptr);
+  let b1 = read_u64_le(buf, ptr + 8);
   ((b1 as u128) << 64) | b0 as u128
 }
 
@@ -243,7 +243,7 @@ pub fn read_i128(buf: &[u8], ptr: usize, endian: Endian) -> i128 {
 #[inline]
 pub fn read_i128_be(buf: &[u8], ptr: usize) -> i128 {
   let b0 = read_u64_be(buf, ptr);
-  let b1 = read_u64_be(buf, ptr);
+  let b1 = read_u64_be(buf, ptr + 8);
   (((b0 as u128) << 64) | b1 as u128) as i128
 }
 
@@ -251,13 +251,16 @@ pub fn read_i128_be(buf: &[u8], ptr: usize) -> i128 {
 #[inline]
 pub fn read_i128_le(buf: &[u8], ptr: usize) -> i128 {
   let b0 = read_u64_le(buf, ptr);
-  let b1 = read_u64_le(buf, ptr);
+  let b1 = read_u64_le(buf, ptr + 8);
   (((b1 as u128) << 64) | b0 as u128) as i128
 }
 
-pub fn read_ascii_string(buf: &[u8], _ptr: usize, _num: usize) -> String {
+/// Reads `num` bytes starting at byte offset `ptr`.
+/// Each byte maps directly to the same Unicode code point (including NUL).
+/// The requested range must be within `buf`.
+pub fn read_ascii_string(buf: &[u8], ptr: usize, num: usize) -> String {
   let mut u16s = Vec::new();
-  for b in buf {
+  for b in &buf[ptr..][..num] {
     u16s.push(*b as u16);
   }
   return String::from_utf16_lossy(&u16s);
@@ -284,16 +287,18 @@ pub fn read_string(buf: &[u8], ptr: usize, num: usize) -> String {
   }
 }
 
+/// Reads UTF-16 from byte offset `ptr`, limited to `num` bytes.
+/// Stops at a NUL code unit and replaces unpaired surrogates lossily.
+/// An odd trailing byte is ignored. The requested range must be within `buf`.
 #[allow(unused)]
 pub fn read_utf16_string(buf: &[u8], ptr: usize, num: usize, endian: Endian) -> String {
   let mut s = Vec::new();
-  let len = buf.len() / 2;
-  for i in 0..len {
-    if buf[ptr + i * 2] == 0 && buf[ptr + i * 2 + 1] == 0 {
+  for bytes in buf[ptr..][..num].chunks_exact(2) {
+    let unit = read_u16(bytes, 0, endian);
+    if unit == 0 {
       break;
     }
-    let u16 = read_u16(buf, ptr + i * 2, endian);
-    s.push(u16);
+    s.push(unit);
   }
   String::from_utf16_lossy(&s)
 }
