@@ -13,9 +13,11 @@ cargo test --manifest-path regressions/Cargo.toml --no-fail-fast
 cargo test --release --manifest-path regressions/Cargo.toml --no-fail-fast
 ```
 
-After the BytesReader and util fixes on 2026-11-10: 3 async failures remain
-in both debug and release. The original 3 BytesReader and 10 util regressions
-now run in the regular suite, alongside expanded boundary coverage.
+After the BytesReader, util, and async boundary fixes on 2026-11-10, only one
+async larger-window API/design limitation remains in both debug and release.
+The original 3 BytesReader, 10 util, and 2 async boundary regressions now run
+in the regular suite, alongside expanded boundary coverage.
+
 
 
 ## Fixed: BytesReader overflow before bounds checking
@@ -31,14 +33,24 @@ position unchanged in both profiles. See `tests/bytes_reader_bounds.rs`.
 
 ## AsyncBytesReader: peek boundaries and buffer size
 
-- An exact-size peek (`abc`, length 3) incorrectly returns `Data shotage`.
-- A zero-length peek on empty input incorrectly returns the same error.
-- A valid peek longer than the current buffer window is rejected.
+- A valid peek longer than the current buffer window is rejected. This remains
+  an API/design limit and the opt-in test records the desired larger-window behavior.
 
-The first two are boundary errors. Supporting larger lookahead needs a separate
+Exact-window and empty peeks are now fixed and tested in
+`tests/async_reader_edges.rs`; empty peeks perform no I/O.
+
+Supporting larger lookahead needs a separate
 API/design decision: the current async peek method does not require `AsyncSeek`,
 so the synchronous seek/restore fix cannot simply be copied without affecting
-which readers are accepted.
+which readers are accepted. Adding owned lookahead state would also affect the
+existing `Copy` implementation and require coordinating all reads and seeks.
+
+A possible additive API is `read_bytes_no_move_seekable` on the existing
+`AsyncSeek`-bounded impl. It could save the logical position, allocate fallibly,
+read exactly, and restore position on success or read failure. It would need an
+explicit policy for restore failures (including preserving both errors), and
+cancellation cannot guarantee async restoration after the future is dropped.
+No such API is added here pending a separate design decision.
 
 ## Resolved util regressions
 

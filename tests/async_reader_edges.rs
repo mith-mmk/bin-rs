@@ -2,7 +2,9 @@
 
 use bin_rs::{async_reader::AsyncBytesReader, Endian};
 use std::io::{Cursor, ErrorKind, SeekFrom};
-use tokio::io::BufReader;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+use tokio::io::{AsyncBufRead, AsyncRead, BufReader, ReadBuf};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -306,3 +308,91 @@ float_bits_edges!(
     0xfff8abcdef012345
   ]
 );
+
+#[tokio::test]
+async fn exact_boundary_peek_should_succeed() -> TestResult {
+  for capacity in [3, 8] {
+    let mut input = reader(b"abc", capacity);
+    assert_eq!(input.read_bytes_no_move(3).await?, b"abc");
+    assert_eq!(input.read_bytes_no_move(3).await?, b"abc");
+    assert_eq!(input.offset().await?, 0);
+    assert_eq!(input.read_bytes_as_vec(3).await?, b"abc");
+  }
+  // A partially consumed window also permits an exact-size peek.
+  let mut input = reader(b"abcd", 4);
+  assert_eq!(input.read_u8().await?, b'a');
+  assert_eq!(input.read_bytes_no_move(3).await?, b"bcd");
+  assert_eq!(input.offset().await?, 1);
+  assert_eq!(input.read_u8().await?, b'b');
+  Ok(())
+}
+
+#[tokio::test]
+async fn zero_byte_peek_at_eof_should_succeed() -> TestResult {
+  for data in [b"".as_slice(), b"abc".as_slice()] {
+    let mut input = reader(data, 1);
+    input.skip_ptr(data.len()).await?;
+    assert!(input.read_bytes_no_move(0).await?.is_empty());
+    assert_eq!(input.offset().await?, data.len() as u64);
+  }
+  Ok(())
+}
+
+// Deliberately non-seekable and Copy: these existing capabilities must remain
+// supported. Empty peeks must not poll a reader that may fail or stay pending.
+#[derive(Clone, Copy, Debug)]
+struct ErrorOnPoll;
+
+impl AsyncRead for ErrorOnPoll {
+  fn poll_read(
+    self: Pin<&mut Self>,
+    _: &mut Context<'_>,
+    _: &mut ReadBuf<'_>,
+  ) -> Poll<std::io::Result<()>> {
+    panic!("peek must not call poll_read directly");
+  }
+}
+
+impl AsyncBufRead for ErrorOnPoll {
+  fn poll_fill_buf(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<std::io::Result<&[u8]>> {
+    Poll::Ready(Err(std::io::Error::new(
+      ErrorKind::PermissionDenied,
+      "injected",
+    )))
+  }
+
+  fn consume(self: Pin<&mut Self>, _: usize) {
+    panic!("peek must not consume");
+  }
+}
+
+#[tokio::test]
+async fn empty_peek_does_not_poll_and_nonempty_peek_propagates_io_error() -> TestResult {
+  fn assert_copy<T: Copy>(_: &T) {}
+  let mut input = AsyncBytesReader::new(ErrorOnPoll);
+  assert_copy(&input);
+  assert!(input.read_bytes_no_move(0).await?.is_empty());
+  let error = input.read_bytes_no_move(1).await.unwrap_err();
+  assert_eq!(
+    error.downcast_ref::<std::io::Error>().unwrap().kind(),
+    ErrorKind::PermissionDenied
+  );
+  assert!(input.read_bytes_no_move(0).await?.is_empty());
+  Ok(())
+}
+
+#[tokio::test]
+async fn failed_window_peek_does_not_consume_or_change_offset() -> TestResult {
+  let mut input = reader(b"abc", 3);
+  assert_eq!(input.read_u8().await?, b'a');
+  // Larger than the current window, including impossible allocation sizes.
+  for length in [3, usize::MAX] {
+    assert!(input.read_bytes_no_move(length).await.is_err());
+    assert_eq!(input.offset().await?, 1);
+    assert_eq!(input.read_bytes_no_move(2).await?, b"bc");
+  }
+  assert_eq!(input.read_bytes_as_vec(2).await?, b"bc");
+  assert!(input.read_bytes_no_move(1).await.is_err());
+  assert_eq!(input.offset().await?, 3);
+  Ok(())
+}
