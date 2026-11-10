@@ -35,7 +35,7 @@ cargo test --release --features stream,async,serde,util
 The edge-case audit still has one unresolved async larger-window API/design
 limitation after the StreamReader, BytesReader, util, and async boundary fixes.
 Its executable assertion lives in the separate
-[known-regression suite](../regressions/README.md). It deliberately fails when
+[known-regression suite](https://github.com/mith-mmk/bin-rs/blob/b2934121238df21206749ae943518ce59be9e606/regressions/README.md). It deliberately fails when
 run and is not included by the root package's ordinary `cargo test`. No tests
 are marked `ignore` or `should_panic` to make these bugs look successful.
 
@@ -53,3 +53,19 @@ cargo test --no-run --target wasm32-unknown-unknown --features stream,util,serde
 This is compile coverage, not Wasm execution. The existing full unit-test harness
 does not compile for that target because its file test unconditionally calls the
 native-only `StreamReader::from_file` method.
+
+## Rust 1.71 validation
+
+Release 0.0.11 was tested with Rust 1.71.0 and a compatible dependency lock:
+Tokio 1.53.2, tokio-macros 2.7.2, bytes 1.12.1, serde 1.0.229, and
+encoding_rs 0.8.35. The default suite passed 40 tests; the optional-feature
+suite above passed 100 tests in both debug and release, including doctests.
+
+The manifest keeps its existing dependency ranges. Latest dependency versions
+are not guaranteed to support older Rust: Tokio 1.54.1 requires Rust 1.85.
+Cargo 1.71 does not automatically select a compatible resolution. To reproduce
+the strategy in an isolated checkout, generate a lockfile with modern Cargo's
+`resolver.incompatible-rust-versions="fallback"` setting, then test that lock
+using `cargo +1.71.0 test --locked --features stream,async,serde,util` and its
+`--release` variant. Keep the generated compatible lock for repeatable results;
+future registry changes may produce a different resolution.

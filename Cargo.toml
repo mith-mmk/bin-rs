@@ -7,7 +7,7 @@ authors = ["mith-mmk <47620686+mith-mmk@users.noreply.github.com>"]
 repository = "https://github.com/mith-mmk/bin-rs"
 edition = "2021"
 rust-version = "1.71"
-version = "0.0.10"
+version = "0.0.11"
 keywords = ["io", "binary"]
 
 [features]
