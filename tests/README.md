@@ -116,6 +116,16 @@ target directories. Existing repository formatting differences make
 `cargo fmt --all -- --check` fail on the base as well; this change does not
 perform an unrelated repository-wide reformat.
 
+## Non-codec compatibility
+
+The codec-only removal does not remove other legacy APIs. Deprecated
+`BinaryReader::read_bytes` and `BytesReader::from_vec`, and the existing string
+and util methods, remain available; they are not slated for immediate removal
+by this work. This CI/Wasm change modifies test harnesses and development
+configuration only. Source-diff verification against the util base confirms
+that the production readers, async reader, util implementation, and public
+module exports are unchanged.
+
 ## CI layout
 
 The workflow tests stable and Rust 1.71 on Linux and Windows with default and
