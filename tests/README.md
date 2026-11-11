@@ -84,3 +84,18 @@ not imply that unresolved release gates have been satisfied.
 cargo test --test sync_contract
 cargo test --features util --test sync_contract
 ```
+
+## Codec-removal validation (0.1.0 target)
+
+On Windows with Rust/Cargo 1.99.0, the default suite passed 47 tests and
+all-features passed 108 tests in both debug and release, including doctests.
+All 16 combinations of stream/util/serde/async passed. Focused contract tests
+passed with default (7) and util (8); all-features all-target checks and
+documentation generation passed. Cargo metadata and the all-features dependency
+tree contain neither a codec/encoding_rs feature nor an encoding_rs dependency.
+
+Rust 1.71.0 also passed the 108-test all-features suite in debug and release
+using a locally generated compatible lock (Tokio 1.53.3, tokio-macros 2.7.2,
+bytes 1.12.1, serde 1.0.229). The lock is not published or committed; dependency
+ranges and the declared MSRV are unchanged. The separate async larger-window
+regression was rerun and still fails; no Wasm execution was performed here.
