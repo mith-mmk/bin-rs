@@ -162,8 +162,10 @@ tree contain neither a codec/encoding_rs feature nor an encoding_rs dependency.
 
 Rust 1.71.0 also passed the 108-test all-features suite in debug and release
 using a locally generated compatible lock (Tokio 1.53.3, tokio-macros 2.7.2,
-bytes 1.12.1, serde 1.0.229). The lock is not published or committed; dependency
-ranges and the declared MSRV are unchanged. The separate async larger-window
+bytes 1.12.1, serde 1.0.229). At that codec-removal checkpoint, the local lock
+was neither published nor committed; the current committed lock is documented
+under [reproducible Rust 1.71 validation](#reproducible-rust-171-validation).
+Dependency ranges and the declared MSRV are unchanged. The separate async larger-window
 regression was rerun and still fails; no Wasm execution was performed here.
 
 ## Util contract characterization
