@@ -146,3 +146,64 @@ kinds, and backend-specific seek behavior. Existing `reader_edges`,
 `bytes_reader_bounds`, and `stream_peek` cover numeric extrema, endian/float
 bits, overflow, seek rejection, and injected peek failures. Together these
 make future policy changes visible rather than silently normalizing behavior.
+
+## Util boundary characterization
+
+The optional `io` helpers have no reader cursor. Offsets and lengths are byte
+counts; callers must validate ranges and allocation sizes before calling them.
+Tests below use valid ranges, including zero length at EOF, nonzero offsets,
+and fields ending exactly at EOF. Invalid-range panic details, arithmetic
+wrapping, and whether an early NUL happens to avoid an out-of-bounds access are
+not a supported checked-range contract.
+
+The following are current compatibility observations, not a decision to freeze
+all legacy quirks as the eventual 0.1 stable API:
+
+- `write_ascii_string` appends the input String's UTF-8 bytes, then one extra
+  NUL byte. It neither validates ASCII nor converts to Latin-1. Embedded and
+  trailing NULs are preserved, so an already terminated input gains another
+  NUL. Existing destination bytes are retained. Non-ASCII output does not
+  roundtrip through `io::read_ascii_string`'s direct byte-to-code-point mapping;
+  that reader also includes the appended NUL when it is in the selected range.
+- `write_string` appends the same UTF-8 bytes without a terminator.
+- `read_string` stops at the first NUL within the byte limit and decodes only
+  the preceding bytes as strict UTF-8. Invalid bytes after NUL do not matter.
+  Invalid bytes before NUL, including a limit that splits a multibyte character,
+  return an empty String, discarding any valid prefix. This return value cannot
+  distinguish invalid UTF-8 from valid empty input or an initial NUL. It does
+  not return the reader's encoding error or perform lossy replacement.
+- `read_bytes_as_u16_vec` widens individual bytes to u16, with no endian
+  conversion or pairing into words. It takes only `2 * floor(length / 2)`
+  bytes and produces that many elements; an odd final byte is dropped. For
+  example `[0x12, 0x34, 0xff]` with length 3 returns `[0x12, 0x34]`, not
+  `[0x1234]` or `[0x3412]`. It is not a UTF-16 decoder.
+
+Before declaring a stable util contract, decide whether to add explicitly
+named UTF-8/NUL writers, a fallible UTF-8 reader that distinguishes empty text
+from failure, and separate byte-widening versus endian-aware word APIs. Any
+change to the existing names needs migration notes and downstream checks.
+These tests deliberately preserve today's output rather than silently fixing
+it; no new checked-range API, deprecation, or breaking util change is made.
+
+`tests/util_contract.rs` complements the existing util and synchronous tests
+with non-ASCII writer output, embedded/trailing NULs, every valid byte prefix of
+multibyte UTF-8, invalid encodings, and even/odd byte-widening lengths across the
+full byte range. The earlier error-kind, position, and UTF-16 odd-length rules
+remain unchanged.
+
+### Util consumer check (2026-11-11)
+
+A fresh source/manifest check of the three revisions linked above found WML2
+calls to `io::read_string` in JPEG APP tag/Ducky metadata parsing
+(`wml2/src/jpeg/header.rs`), TIFF MakerNoteApple conversion
+(`wml2/src/tiff/tags.rs`), and format sniffing (`wml2/src/util.rs`). In
+particular, Ducky parsing uses the returned comment's byte length to advance
+to the next field, so returning empty on invalid UTF-8 is not merely a display
+choice. No change to that consumer is made in this characterization.
+
+No references to `write_ascii_string` or `read_bytes_as_u16_vec` were found in
+these consumers' tracked Rust sources. FontReader and paintcore request no
+util feature directly. This bounded source audit does not establish that the
+helpers are unused elsewhere, validate every parser range, or replace running
+consumer test suites. Absence of a call site is not permission to change a
+public helper's behavior silently.
