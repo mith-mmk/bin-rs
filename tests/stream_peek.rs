@@ -1,7 +1,8 @@
 use bin_rs::reader::{BinaryReader, StreamReader};
 use std::io::{self, BufRead, BufReader, Cursor, Read, Seek, SeekFrom};
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn peek_crosses_small_buffer_boundaries_without_consuming() -> io::Result<()> {
   let data: Vec<u8> = (0..=255).cycle().take(600).collect();
   for capacity in [0, 1, 2, 8, 16, 255, 256, 8192] {
@@ -18,7 +19,8 @@ fn peek_crosses_small_buffer_boundaries_without_consuming() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn peek_refills_a_partly_consumed_buffer() -> io::Result<()> {
   let mut reader = StreamReader::new(BufReader::with_capacity(
     8,
@@ -31,7 +33,8 @@ fn peek_refills_a_partly_consumed_buffer() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn truncated_peek_restores_position_and_returns_unexpected_eof() -> io::Result<()> {
   for capacity in [1, 8, 8192] {
     let mut reader = StreamReader::new(BufReader::with_capacity(capacity, Cursor::new(b"abc")));
@@ -123,7 +126,8 @@ impl Seek for ShortReader {
   }
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn peek_handles_short_and_interrupted_reads() -> io::Result<()> {
   let mut source = ShortReader::new();
   source.cursor.set_position(2);
@@ -135,7 +139,8 @@ fn peek_handles_short_and_interrupted_reads() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn read_error_after_partial_progress_restores_position() -> io::Result<()> {
   let mut source = ShortReader::new();
   source.cursor.set_position(2);
@@ -148,7 +153,8 @@ fn read_error_after_partial_progress_restores_position() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn restore_failure_is_reported_even_after_read_failure() {
   for fail_read_at in [None, Some(3)] {
     let mut source = ShortReader::new();
@@ -161,7 +167,8 @@ fn restore_failure_is_reported_even_after_read_failure() {
   }
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn position_failure_does_not_consume_input() {
   let mut source = ShortReader::new();
   source.fail_position = true;
@@ -174,7 +181,8 @@ fn position_failure_does_not_consume_input() {
   assert_eq!(source.seeks, 0);
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn buffered_peek_does_not_seek() -> io::Result<()> {
   let mut source = ShortReader::new();
   source.fail_position = true;
@@ -186,7 +194,8 @@ fn buffered_peek_does_not_seek() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn empty_peek_performs_no_io_and_fill_errors_propagate() -> io::Result<()> {
   let mut source = ShortReader::new();
   source.fail_fill = true;
@@ -203,7 +212,8 @@ fn empty_peek_performs_no_io_and_fill_errors_propagate() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn impossible_peek_allocation_returns_error_without_consuming() -> io::Result<()> {
   for capacity in [0, 1, 8] {
     let mut reader = StreamReader::new(BufReader::with_capacity(capacity, Cursor::new(b"abc")));
@@ -216,7 +226,8 @@ fn impossible_peek_allocation_returns_error_without_consuming() -> io::Result<()
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn peek_beyond_eof_restores_the_original_position() -> io::Result<()> {
   let mut reader = StreamReader::new(BufReader::with_capacity(1, Cursor::new(b"abc")));
   assert_eq!(reader.seek(SeekFrom::Start(10))?, 10);

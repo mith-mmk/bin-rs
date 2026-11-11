@@ -20,3 +20,8 @@ util = []
 [dependencies]
 tokio = {version = "1", optional = true, features = ["io-util","macros", "rt"]}
 bytes = {version = "1", optional = true, features = ["serde"] }
+
+# Keep this pair aligned with the CLI installed by CI. Native builds do not compile it.
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen = "=0.2.100"
+wasm-bindgen-test = "=0.3.50"

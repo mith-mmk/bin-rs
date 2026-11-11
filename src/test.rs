@@ -1,10 +1,10 @@
 use crate::reader::*;
 use crate::Endian;
-use std::fs;
 use std::io::Cursor;
 use std::io::SeekFrom;
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn check_works() -> Result<(), Box<dyn std::error::Error>> {
   let buffer: Vec<u8> = (0..255).collect();
   let mut reader = BytesReader::from(buffer);
@@ -161,8 +161,7 @@ fn check_works() -> Result<(), Box<dyn std::error::Error>> {
   assert_eq!(r, 255);
   assert!(reader.read_u8().is_err());
 
-  let f = std::path::PathBuf::from("./test/unascii.txt");
-  let buffer = fs::read(f)?;
+  let buffer: &[u8] = include_bytes!("../test/unascii.txt");
   let mut reader = BytesReader::new(&buffer);
   let assert_str = "©2023 Mith@mmk";
   let r = reader.read_ascii_string(assert_str.len() - 1)?; // un ascii string using 2byte for utf8
@@ -171,10 +170,9 @@ fn check_works() -> Result<(), Box<dyn std::error::Error>> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn check_stream() -> Result<(), Box<dyn std::error::Error>> {
-  use std::path::PathBuf;
-
   use crate::reader::StreamReader;
 
   let buffer: Vec<u8> = (0..255).collect();
@@ -362,8 +360,7 @@ fn check_stream() -> Result<(), Box<dyn std::error::Error>> {
   let r = reader.read_utf16_string(len)?;
   assert_eq!(r, "へろー World!"); // ok
 
-  let f = PathBuf::from("./test/unascii.txt");
-  let mut reader = StreamReader::from_file(f)?;
+  let mut reader = StreamReader::new(Cursor::new(include_bytes!("../test/unascii.txt")));
   let assert_str = "©2023 Mith@mmk";
   let r = reader.read_ascii_string(assert_str.len() - 1)?; // un ascii string using 2byte for utf8
   assert_eq!(r, assert_str);
@@ -371,7 +368,8 @@ fn check_stream() -> Result<(), Box<dyn std::error::Error>> {
   Ok(())
 }
 
-#[tokio::test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
 #[cfg(feature = "async")]
 pub async fn check_async() -> Result<(), Box<dyn std::error::Error>> {
   use crate::async_reader::AsyncBytesReader;
@@ -507,4 +505,18 @@ pub async fn check_async() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(feature = "util")]
 fn io_test() {
   todo!();
+}
+
+// Filesystem behavior remains covered natively, independently of memory tests.
+#[cfg(not(target_family = "wasm"))]
+#[test]
+fn check_native_files() -> Result<(), Box<dyn std::error::Error>> {
+  let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("test/unascii.txt");
+  let buffer = std::fs::read(&path)?;
+  let expected = "©2023 Mith@mmk";
+  let mut bytes = BytesReader::new(&buffer);
+  assert_eq!(bytes.read_ascii_string(expected.len() - 1)?, expected);
+  let mut stream = StreamReader::from_file(path)?;
+  assert_eq!(stream.read_ascii_string(expected.len() - 1)?, expected);
+  Ok(())
 }
