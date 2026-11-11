@@ -11,3 +11,7 @@
 ## Tests
 
 See [test coverage and commands](tests/README.md), including the explicitly failing known-regression suite.
+
+## Stabilization
+
+See the [synchronous contract baseline and 0.1.x release gates](docs/synchronous-contract.md). Async stable-contract work targets 0.2.0.
