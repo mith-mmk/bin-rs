@@ -69,3 +69,15 @@ the strategy in an isolated checkout, generate a lockfile with modern Cargo's
 using `cargo +1.71.0 test --locked --features stream,async,serde,util` and its
 `--release` variant. Keep the generated compatible lock for repeatable results;
 future registry changes may produce a different resolution.
+
+## Synchronous contract baseline
+
+`sync_contract.rs` characterizes legacy string mappings, odd UTF-16 sizes,
+composite-read error positions, and backend-specific error/seek behavior.
+See [the contract baseline](../docs/synchronous-contract.md); these tests do
+not imply that unresolved release gates have been satisfied.
+
+```sh
+cargo test --test sync_contract
+cargo test --features util --test sync_contract
+```
