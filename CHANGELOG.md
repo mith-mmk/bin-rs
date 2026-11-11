@@ -1,9 +1,8 @@
 # Changelog
 
-## 0.1.0 (unreleased release candidate)
+## 0.1.0
 
-The manifest and committed lockfile are now 0.1.0. This version has not been
-published; no tag or release has been created.
+The manifest and committed lockfile identify version 0.1.0.
 
 ### Breaking change: remove unfinished codec support
 

@@ -4,8 +4,7 @@ This document records the behavior of 0.0.11 before preparing 0.1.x. It is a
 reviewable compatibility baseline, **not** an announcement that 0.1.0 is ready
 or a promise to preserve every legacy behavior forever. Changes to this
 baseline need explicit migration notes and regression tests. The codec removal
-described below is a breaking 0.1.0 change. The manifest is now 0.1.0 as an
-unreleased release candidate; it has not been published or tagged.
+described below is a breaking 0.1.0 change. The manifest identifies version 0.1.0.
 
 ## Scope and release gates
 
@@ -120,7 +119,7 @@ The `codec` Cargo feature, optional `encoding_rs` dependency (including its
 implicit Cargo feature), `reader::CodeType`, and `read_local_string` methods
 on BinaryReader, BytesReader, StreamReader, and AsyncBytesReader are removed.
 This is a breaking change intended for 0.1.0, **not a 0.0.x patch release**.
-The manifest and committed lockfile now identify 0.1.0; no release is published.
+The manifest and committed lockfile identify version 0.1.0.
 
 Remove `codec` / `encoding_rs` from bin-rs feature requests and remove
 `CodeType` imports and `read_local_string` implementations or calls.
