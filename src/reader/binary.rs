@@ -149,9 +149,6 @@ pub trait BinaryReader {
     }
   }
 
-  #[cfg(feature = "codec")]
-  fn read_local_string(&mut self, size: usize, code: CodeType) -> Result<String, Error>;
-
   /// skip size byte
   fn skip_ptr(&mut self, size: usize) -> Result<usize, Error>;
 

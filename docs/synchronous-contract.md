@@ -3,8 +3,8 @@
 This document records the behavior of 0.0.11 before preparing 0.1.x. It is a
 reviewable compatibility baseline, **not** an announcement that 0.1.0 is ready
 or a promise to preserve every legacy behavior forever. Changes to this
-baseline need explicit migration notes and regression tests. This PR makes no
-runtime, version, feature, dependency, or downstream requirement changes.
+baseline need explicit migration notes and regression tests. The codec removal described below is a breaking 0.1.0-target change; the
+manifest version has not been bumped.
 
 ## Scope and release gates
 
@@ -14,10 +14,9 @@ The 0.1.x stabilization work prioritizes `BinaryReader`, `BytesReader`,
 larger than the buffer, and ownership design are not settled here. The current
 opt-in failing larger-window regression remains visible in `regressions/`.
 
-The `codec` feature is not part of the validated baseline: it currently does
-not compile. Do not call this an all-features-clean release. Before 0.1.0,
-resolve its retain/repair versus deprecate/remove policy explicitly and verify
-the selected feature matrix. Also resolve the native-only file test in the
+The unfinished `codec` feature and its optional dependency have been removed
+for the 0.1.0 target. The remaining feature matrix must pass, but that alone
+does not declare 0.1.0 ready. Also resolve the native-only file test in the
 full Wasm harness and validate the declared MSRV with reproducible dependency
 resolution. See [test instructions](../tests/README.md).
 
@@ -101,13 +100,30 @@ whether an existing spelling should be deprecated.
 
 ## Codec and downstream audit (2026-11-11)
 
-The existing CodeType enum lists multiple encodings, but is not implemented
-as a working decoder: BytesReader's method returns an unfinished error;
-StreamReader ignores CodeType and attempts NUL-terminated UTF-8; the async
-method also has missing-await issues. Missing imports and a missing return
-expression prevent compilation. Simply fixing imports would not provide the
-advertised decoding behavior. `encoding_rs` is only an optional codec
-dependency; none of these working string helpers needs it.
+Historically, the CodeType enum listed multiple encodings without a working
+decoder: BytesReader's method had an unfinished error; StreamReader ignored
+CodeType and attempted NUL-terminated UTF-8; the async method missed an await.
+Missing imports and a missing return expression prevented compilation.
+Fixing those errors alone would not provide the advertised decoding behavior.
+This is the rationale for removal, not a current all-features build failure.
+
+### Breaking migration for the 0.1.0 target
+
+The `codec` Cargo feature, optional `encoding_rs` dependency (including its
+implicit Cargo feature), `reader::CodeType`, and `read_local_string` methods
+on BinaryReader, BytesReader, StreamReader, and AsyncBytesReader are removed.
+This is a breaking change intended for 0.1.0, **not a 0.0.x patch release**.
+No version bump or release is made here.
+
+Remove `codec` / `encoding_rs` from bin-rs feature requests and remove
+`CodeType` imports and `read_local_string` implementations or calls.
+Read the encoded field as raw bytes (for example with `read_bytes_as_vec`,
+awaited for the async reader), then decode in format-layer code using the
+format's encoding, termination, and error policy. If needed, add a decoder
+dependency to that layer directly. There is no replacement codec in bin-rs.
+Do not substitute `read_ascii_string` for Shift_JIS or other legacy decoding:
+its direct byte mapping and NUL policy are different. Existing ASCII,
+UTF-8, UTF-16, and util helpers retain their behavior.
 
 Source and Cargo manifests were checked at these consumer revisions:
 
@@ -119,8 +135,8 @@ No codec/async feature request or CodeType/read_local_string/AsyncBytesReader
 use was found in these checked manifests and Rust sources. WML2 does use both
 reader and util ASCII helpers in JPEG/GIF/PNG paths, so their different NUL
 semantics matter. This is a bounded audit, not proof that no external consumer
-uses the optional APIs. Removing codec would remove public symbols/features;
-repairing it requires an explicit encoding/error policy. Neither is done here.
+uses the optional APIs. The removal is therefore treated as breaking despite
+the lack of usage in these checked consumers.
 
 ## Regression map
 

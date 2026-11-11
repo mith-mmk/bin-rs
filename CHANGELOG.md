@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased: 0.1.0 target
+
+### Breaking change: remove unfinished codec support
+
+- Removed the `codec` feature, optional `encoding_rs` dependency and its implicit
+  feature, `reader::CodeType`, and all `read_local_string` methods.
+- This removal targets 0.1.0 and must not ship as a 0.0.x patch release.
+  The manifest remains 0.0.11 until a separate release/version decision.
+- Decode legacy encodings in format-layer code after reading raw bytes.
+  bin-rs provides no replacement codec. See the
+  [migration notes](docs/synchronous-contract.md#breaking-migration-for-the-010-target).
+- Existing ASCII/UTF-8/UTF-16 helpers and async behavior are unchanged.
+  Async's stable contract still targets 0.2.0; the larger-peek regression
+  remains unresolved in the separate regression suite.
+
 ## 0.0.11
 
 ### Fixes

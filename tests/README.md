@@ -4,8 +4,8 @@ Run the default suite and the supported optional-feature suite from the reposito
 
 ```sh
 cargo test
-cargo test --features stream,async,serde,util
-cargo test --release --features stream,async,serde,util
+cargo test --all-features
+cargo test --release --all-features
 ```
 
 - `reader_edges.rs` compares BytesReader and buffered/unbuffered StreamReader
@@ -39,10 +39,13 @@ Its executable assertion lives in the separate
 run and is not included by the root package's ordinary `cargo test`. No tests
 are marked `ignore` or `should_panic` to make these bugs look successful.
 
-`cargo test --all-features` also fails on the existing `codec` implementation:
-missing `CodeType` imports, a missing async `.await`, and a missing return
-expression in BytesReader. Excluding `codec` from the supported-feature command
-above does not imply that the all-features build passes.
+The former `codec` implementation prevented all-features compilation (missing
+imports, an async await, and a BytesReader return expression). This is now
+historical: the unfinished feature, dependency, and APIs were removed for the
+breaking 0.1.0 target, not a 0.0.x patch. The all-features commands above cover
+all remaining features. See [migration notes](../docs/synchronous-contract.md#breaking-migration-for-the-010-target).
+Async's stable contract still targets 0.2.0; passing this suite does not resolve
+the separate larger-window regression.
 
 The new synchronous integration tests can be cross-compiled separately:
 
@@ -58,8 +61,8 @@ native-only `StreamReader::from_file` method.
 
 Release 0.0.11 was tested with Rust 1.71.0 and a compatible dependency lock:
 Tokio 1.53.2, tokio-macros 2.7.2, bytes 1.12.1, serde 1.0.229, and
-encoding_rs 0.8.35. The default suite passed 40 tests; the optional-feature
-suite above passed 100 tests in both debug and release, including doctests.
+encoding_rs 0.8.35. The default suite passed 40 tests; the `stream,async,serde,util`
+suite passed 100 tests in both debug and release, including doctests.
 
 The manifest keeps its existing dependency ranges. Latest dependency versions
 are not guaranteed to support older Rust: Tokio 1.54.1 requires Rust 1.85.
