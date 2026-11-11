@@ -1,13 +1,17 @@
 # Changelog
 
-## Unreleased: 0.1.0 target
+## 0.1.0 (unreleased release candidate)
+
+The manifest and committed lockfile are now 0.1.0. This version has not been
+published; no tag or release has been created.
 
 ### Breaking change: remove unfinished codec support
 
 - Removed the `codec` feature, optional `encoding_rs` dependency and its implicit
   feature, `reader::CodeType`, and all `read_local_string` methods.
-- This removal targets 0.1.0 and must not ship as a 0.0.x patch release.
-  The manifest remains 0.0.11 until a separate release/version decision.
+- This removal is a breaking 0.1.0 change and must not ship as a 0.0.x patch.
+  All non-codec legacy APIs remain, including deprecated `BinaryReader::read_bytes`
+  and `BytesReader::from_vec`.
 - Decode legacy encodings in format-layer code after reading raw bytes.
   bin-rs provides no replacement codec. See the
   [migration notes](docs/synchronous-contract.md#breaking-migration-for-the-010-target).
