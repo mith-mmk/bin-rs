@@ -15,10 +15,16 @@ larger than the buffer, and ownership design are not settled here. The current
 opt-in failing larger-window regression remains visible in `regressions/`.
 
 The unfinished `codec` feature and its optional dependency have been removed
-for the 0.1.0 target. The remaining feature matrix must pass, but that alone
-does not declare 0.1.0 ready. Also resolve the native-only file test in the
-full Wasm harness and validate the declared MSRV with reproducible dependency
-resolution. See [test instructions](../tests/README.md).
+for the 0.1.0 target. The remaining feature matrix passes locally, but that alone
+does not declare 0.1.0 ready. Native filesystem checks are now separated from
+the memory-backed harness, and the [Wasm tests execute in Node](../tests/README.md#executable-wasm-coverage).
+The declared Rust 1.71 MSRV has been validated with a
+[committed version-3 dependency lock](../tests/README.md#reproducible-rust-171-validation).
+See the [local validation results](../tests/README.md#local-validation-of-the-ciwasm-change).
+Remaining release gates include hosted CI for the final commit, final package
+validation, and downstream consumer checks against the intended release.
+These completed harness and lock checks do not settle the async design limits
+above or imply that 0.1.0 is ready.
 
 ## Successful reads and byte order
 
