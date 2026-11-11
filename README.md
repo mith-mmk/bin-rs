@@ -15,3 +15,6 @@ See [test coverage and commands](tests/README.md), including the explicitly fail
 ## Stabilization
 
 See the [synchronous contract baseline and 0.1.x release gates](docs/synchronous-contract.md). Async stable-contract work targets 0.2.0.
+
+The unreleased 0.1.0 target removes unfinished codec support as a breaking
+change, not a 0.0.x patch. See [migration notes](docs/synchronous-contract.md#breaking-migration-for-the-010-target).

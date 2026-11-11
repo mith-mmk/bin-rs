@@ -4,8 +4,6 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Cursor;
 use std::io::Error;
-#[cfg(feature = "codec")]
-use std::io::ErrorKind;
 /// 0.0.8 Enable support for target_family other than "wasm", feature "stream" is disabled.
 ///
 /// StreamReader from creating BufRead
@@ -317,31 +315,6 @@ impl<R: BufRead + Seek> BinaryReader for StreamReader<R> {
     let mut array = [0; 8];
     self.reader.read_exact(&mut array)?;
     Ok(f64::from_le_bytes(array))
-  }
-
-  #[cfg(feature = "codec")]
-  fn read_local_string(&mut self, size: usize, code: CodeType) -> Result<String, Error> {
-    let mut array: Vec<u8> = (0..size).map(|_| 0).collect();
-    self.reader.read_exact(&mut array)?;
-
-    let buf = &array;
-    let mut s = Vec::new();
-    for i in 0..size {
-      if buf[i] == 0 {
-        break;
-      }
-      s.push(buf[i]);
-    }
-    let res = String::from_utf8(s);
-    match res {
-      Ok(strings) => {
-        return Ok(strings);
-      }
-      _ => {
-        let err = "This string can not read";
-        return Err(Error::new(ErrorKind::Other, err));
-      }
-    }
   }
 
   /// skip size byte

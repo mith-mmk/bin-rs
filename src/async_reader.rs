@@ -351,29 +351,6 @@ impl<R: AsyncBufReadExt + Send + std::marker::Unpin>  AsyncBytesReader<R> {
         }
     }
 
-    #[cfg(feature="codec")]
-    pub async fn read_local_string(&mut self,size:usize,code: CodeType) -> Result<String,Error>{
-        let mut array :Vec<u8> = (0..size).map(|_| 0).collect();
-        self.reader.read_exact(&mut array)?;
-
-        let buf = &array;
-        let mut s = Vec::new();
-        for i in 0..size {
-            if buf[i] == 0 {break;}
-            s.push(buf[i]);
-        }
-        let res = String::from_utf8(s);
-        match res {
-            Ok(strings) => {
-                return Ok(strings);
-            },
-            _ => {
-                let err = "This string can not read";
-                return Err(Box::new(std::io::Error::new(ErrorKind::Other,err)));
-            }
-        }
-    }
-
     /// skip size byte
     pub async fn skip_ptr(&mut self,size:usize) -> Result<usize,Error>{
         let mut array :Vec<u8> = (0..size).map(|_| 0).collect();

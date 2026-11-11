@@ -556,13 +556,6 @@ impl BinaryReader for BytesReader {
     Ok(f64::from_le_bytes(array))
   }
 
-  #[cfg(feature = "codec")]
-  fn read_local_string(&mut self, size: usize, code: CodeType) -> Result<String, Error> {
-    self.check_bound(size)?;
-    self.ptr += size;
-    Err(Error::new(ErrorKind::Other, "No impl"));
-  }
-
   /// skip_ptr skips offset size bytes
   fn skip_ptr(&mut self, size: usize) -> Result<usize, Error> {
     self.check_bound(size)?;

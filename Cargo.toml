@@ -13,12 +13,10 @@ keywords = ["io", "binary"]
 [features]
 default = []
 stream = []
-codec = ["encoding_rs"]
 async = ["tokio"]
 serde = ["bytes"]
 util = []
 
 [dependencies]
-encoding_rs = {version = "0.8",optional = true}
 tokio = {version = "1", optional = true, features = ["io-util","macros", "rt"]}
 bytes = {version = "1", optional = true, features = ["serde"] }

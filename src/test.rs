@@ -111,10 +111,6 @@ fn check_works() -> Result<(), Box<dyn std::error::Error>> {
   let r = reader.read_utf8_string(23)?;
   assert_eq!(r, "へろーわーるど\01");
 
-  if cfg!(feature = "codec") {
-    // no impl reader.read_local_string
-  }
-
   let buffer = [0x71, 0x3D, 0x0A, 0xD7, 0xA3, 0x30, 0x31, 0xC0];
   let mut reader = BytesReader::new(&buffer);
   reader.set_endian(Endian::LittleEndian);
@@ -471,10 +467,6 @@ pub async fn check_async() -> Result<(), Box<dyn std::error::Error>> {
   let mut reader = AsyncBytesReader::new(&*buffer);
   let r = reader.read_utf8_string(23).await?;
   assert_eq!(r, "へろーわーるど\01");
-
-  if cfg!(feature = "codec") {
-    // no impl reader.read_local_string
-  }
 
   let buffer = [0x71, 0x3D, 0x0A, 0xD7, 0xA3, 0x30, 0x31, 0xC0].to_vec();
   let mut reader = AsyncBytesReader::new(&*buffer);

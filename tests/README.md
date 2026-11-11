@@ -4,8 +4,8 @@ Run the default suite and the supported optional-feature suite from the reposito
 
 ```sh
 cargo test
-cargo test --features stream,async,serde,util
-cargo test --release --features stream,async,serde,util
+cargo test --all-features
+cargo test --release --all-features
 ```
 
 - `reader_edges.rs` compares BytesReader and buffered/unbuffered StreamReader
@@ -39,10 +39,13 @@ Its executable assertion lives in the separate
 run and is not included by the root package's ordinary `cargo test`. No tests
 are marked `ignore` or `should_panic` to make these bugs look successful.
 
-`cargo test --all-features` also fails on the existing `codec` implementation:
-missing `CodeType` imports, a missing async `.await`, and a missing return
-expression in BytesReader. Excluding `codec` from the supported-feature command
-above does not imply that the all-features build passes.
+The former `codec` implementation prevented all-features compilation (missing
+imports, an async await, and a BytesReader return expression). This is now
+historical: the unfinished feature, dependency, and APIs were removed for the
+breaking 0.1.0 target, not a 0.0.x patch. The all-features commands above cover
+all remaining features. See [migration notes](../docs/synchronous-contract.md#breaking-migration-for-the-010-target).
+Async's stable contract still targets 0.2.0; passing this suite does not resolve
+the separate larger-window regression.
 
 The new synchronous integration tests can be cross-compiled separately:
 
@@ -58,8 +61,8 @@ native-only `StreamReader::from_file` method.
 
 Release 0.0.11 was tested with Rust 1.71.0 and a compatible dependency lock:
 Tokio 1.53.2, tokio-macros 2.7.2, bytes 1.12.1, serde 1.0.229, and
-encoding_rs 0.8.35. The default suite passed 40 tests; the optional-feature
-suite above passed 100 tests in both debug and release, including doctests.
+encoding_rs 0.8.35. The default suite passed 40 tests; the `stream,async,serde,util`
+suite passed 100 tests in both debug and release, including doctests.
 
 The manifest keeps its existing dependency ranges. Latest dependency versions
 are not guaranteed to support older Rust: Tokio 1.54.1 requires Rust 1.85.
@@ -81,3 +84,18 @@ not imply that unresolved release gates have been satisfied.
 cargo test --test sync_contract
 cargo test --features util --test sync_contract
 ```
+
+## Codec-removal validation (0.1.0 target)
+
+On Windows with Rust/Cargo 1.99.0, the default suite passed 47 tests and
+all-features passed 108 tests in both debug and release, including doctests.
+All 16 combinations of stream/util/serde/async passed. Focused contract tests
+passed with default (7) and util (8); all-features all-target checks and
+documentation generation passed. Cargo metadata and the all-features dependency
+tree contain neither a codec/encoding_rs feature nor an encoding_rs dependency.
+
+Rust 1.71.0 also passed the 108-test all-features suite in debug and release
+using a locally generated compatible lock (Tokio 1.53.3, tokio-macros 2.7.2,
+bytes 1.12.1, serde 1.0.229). The lock is not published or committed; dependency
+ranges and the declared MSRV are unchanged. The separate async larger-window
+regression was rerun and still fails; no Wasm execution was performed here.
