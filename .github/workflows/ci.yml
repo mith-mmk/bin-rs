@@ -1,0 +1,89 @@
+name: Rust and Wasm tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  native:
+    name: Native ${{ matrix.os }} / Rust ${{ matrix.rust }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        rust: [stable, '1.71.0']
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        run: rustup toolchain install ${{ matrix.rust }} --profile minimal
+      - name: Default and all-feature tests, debug and release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +${{ matrix.rust }} test --locked
+          cargo +${{ matrix.rust }} test --locked --all-features
+          cargo +${{ matrix.rust }} test --locked --release
+          cargo +${{ matrix.rust }} test --locked --release --all-features
+
+  feature-combinations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - run: rustup toolchain install stable --profile minimal
+      - name: All 16 feature combinations, debug and release
+        shell: bash
+        run: |
+          set -euo pipefail
+          features=(stream async serde util)
+          for mask in {0..15}; do
+            selected=()
+            for bit in {0..3}; do
+              if (( mask & (1 << bit) )); then
+                selected+=("${features[$bit]}")
+              fi
+            done
+            args=(--locked --no-default-features)
+            if (( ${#selected[@]} )); then
+              args+=(--features "$(IFS=,; echo "${selected[*]}")")
+            fi
+            echo "Feature mask: $mask (${selected[*]})"
+            cargo +stable test "${args[@]}"
+            cargo +stable test "${args[@]}" --release
+          done
+
+  wasm-node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Install Rust and matching Wasm test runner
+        run: |
+          rustup toolchain install stable --profile minimal --target wasm32-unknown-unknown
+          cargo +stable install wasm-bindgen-cli --version 0.2.100 --locked
+      - name: Execute memory tests in Node, debug and release
+        run: |
+          cargo +stable test --locked --target wasm32-unknown-unknown --lib --tests
+          cargo +stable test --locked --target wasm32-unknown-unknown --lib --tests --all-features
+          cargo +stable test --locked --target wasm32-unknown-unknown --lib --tests --release
+          cargo +stable test --locked --target wasm32-unknown-unknown --lib --tests --release --all-features

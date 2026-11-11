@@ -6,7 +6,8 @@ use bin_rs::{io, io::*, Endian};
 // Invalid slices are deliberately not assigned a new error-handling contract here.
 macro_rules! integer_writes {
   ($name:ident, $ty:ty, $write:ident, $be:ident, $le:ident, $values:expr) => {
-    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+    #[cfg_attr(not(target_arch = "wasm32"), test)]
     fn $name() {
       for value in $values {
         for endian in [Endian::BigEndian, Endian::LittleEndian] {
@@ -98,7 +99,8 @@ integer_writes!(
 
 macro_rules! integer_reads {
   ($name:ident, $read:ident, $be:ident, $le:ident, $values:expr) => {
-    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+    #[cfg_attr(not(target_arch = "wasm32"), test)]
     fn $name() {
       for value in $values {
         for endian in [Endian::BigEndian, Endian::LittleEndian] {
@@ -162,7 +164,8 @@ integer_reads!(
   [i64::MIN, -12345, -1, 0, 1, i64::MAX]
 );
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn i16_big_endian_reads() {
   for value in [i16::MIN, -12345, -1, 0, 1, i16::MAX] {
     let mut bytes = vec![0xa5];
@@ -174,7 +177,8 @@ fn i16_big_endian_reads() {
 
 macro_rules! float_bits {
   ($name:ident, $ty:ty, $read:ident, $write:ident, $be:ident, $le:ident, $bits:expr) => {
-    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+    #[cfg_attr(not(target_arch = "wasm32"), test)]
     fn $name() {
       for bits in $bits {
         let value = <$ty>::from_bits(bits);
@@ -239,7 +243,8 @@ float_bits!(
   ]
 );
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn byte_operations_append_and_respect_ranges() {
   let mut bytes = vec![0xa5];
   for value in [0, 1, 127, 128, 255] {
@@ -260,7 +265,8 @@ fn byte_operations_append_and_respect_ranges() {
   assert_eq!(&bytes[before.len()..], &[0, 255]);
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn utf8_strings_honor_offset_limit_and_nul() {
   assert_eq!(read_string(b"xhello!", 1, 5), "hello");
   assert_eq!(read_string(b"xhi\0tail", 1, 7), "hi");
@@ -277,7 +283,8 @@ fn utf8_strings_honor_offset_limit_and_nul() {
   assert_eq!(bytes.len(), 1 + text.len());
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn ascii_writer_appends_one_terminator() {
   let mut bytes = vec![0xa5];
   write_ascii_string("ABC".to_owned(), &mut bytes);
@@ -285,7 +292,8 @@ fn ascii_writer_appends_one_terminator() {
   assert_eq!(bytes, [0xa5, b'A', b'B', b'C', 0, 0]);
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn utf16_decodes_surrogates_lossily_and_stops_at_nul() {
   for endian in [Endian::BigEndian, Endian::LittleEndian] {
     for (units, expected) in [
@@ -303,24 +311,28 @@ fn utf16_decodes_surrogates_lossily_and_stops_at_nul() {
   }
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn signed_byte_reads_value_not_address() {
   let bytes = [0x80; 256];
   for offset in 0..bytes.len() {
     assert_eq!(io::read_i8(&bytes, offset), -128, "offset {offset}");
   }
 }
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn signed_little_endian_16_preserves_minimum() {
   assert_eq!(io::read_i16_le(&[0, 0x80], 0), i16::MIN);
 }
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn signed_little_endian_dispatch_preserves_minimum() {
   assert_eq!(io::read_i16(&[0, 0x80], 0, Endian::LittleEndian), i16::MIN);
 }
 macro_rules! wide_read {
   ($name:ident, $read:ident, $ty:ty, $encoding:ident) => {
-    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+    #[cfg_attr(not(target_arch = "wasm32"), test)]
     fn $name() {
       let value: $ty = 0x0123456789abcdeffedcba9876543210;
       let mut bytes = vec![0xa5];
@@ -333,18 +345,21 @@ wide_read!(u128_be_distinct_halves, read_u128_be, u128, to_be_bytes);
 wide_read!(u128_le_distinct_halves, read_u128_le, u128, to_le_bytes);
 wide_read!(i128_be_distinct_halves, read_i128_be, i128, to_be_bytes);
 wide_read!(i128_le_distinct_halves, read_i128_le, i128, to_le_bytes);
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn ascii_honors_offset_and_length() {
   assert_eq!(io::read_ascii_string(b"xABCz", 1, 3), "ABC");
 }
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn utf16_honors_zero_length() {
   assert_eq!(
     io::read_utf16_string(&[0, b'A'], 0, 0, Endian::BigEndian),
     ""
   );
 }
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn utf16_valid_nonzero_offset_does_not_overrun() {
   assert_eq!(
     io::read_utf16_string(&[0xff, 0xff, 0, b'A'], 2, 2, Endian::BigEndian),
@@ -388,7 +403,8 @@ integer_reads!(
   ]
 );
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn signed_byte_reads_all_values_at_boundaries() {
   for byte in 0..=u8::MAX {
     assert_eq!(read_i8(&[byte], 0), byte as i8);
@@ -397,7 +413,8 @@ fn signed_byte_reads_all_values_at_boundaries() {
   }
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn ascii_preserves_nul_and_high_bytes_within_range() {
   assert_eq!(read_ascii_string(&[], 0, 0), "");
   assert_eq!(read_ascii_string(b"x", 1, 0), "");
@@ -411,7 +428,8 @@ fn ascii_preserves_nul_and_high_bytes_within_range() {
   }
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn utf16_limits_are_bytes_and_ignore_incomplete_units() {
   for endian in [Endian::BigEndian, Endian::LittleEndian] {
     for offset in [0, 1, 2, 3] {

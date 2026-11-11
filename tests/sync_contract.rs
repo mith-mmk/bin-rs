@@ -14,7 +14,8 @@ fn readers(data: &[u8]) -> Vec<Box<dyn BinaryReader>> {
   ]
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn ascii_maps_every_nonzero_byte_without_windows_1252_substitution() -> io::Result<()> {
   let bytes: Vec<u8> = (1..=255).collect();
   let expected: String = bytes.iter().map(|&b| char::from(b)).collect();
@@ -25,7 +26,8 @@ fn ascii_maps_every_nonzero_byte_without_windows_1252_substitution() -> io::Resu
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn ascii_nul_consumes_padding_even_when_text_is_empty() -> io::Result<()> {
   for mut reader in readers(&[0, 0xff, b'!']) {
     assert_eq!(reader.read_ascii_string(2)?, "");
@@ -35,7 +37,8 @@ fn ascii_nul_consumes_padding_even_when_text_is_empty() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn odd_utf16_lengths_leave_the_unpaired_byte_unread() -> io::Result<()> {
   for mut reader in readers(&[0, b'A', 0xff]) {
     reader.set_endian(Endian::LittleEndian);
@@ -56,7 +59,8 @@ fn odd_utf16_lengths_leave_the_unpaired_byte_unread() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn composite_string_reads_are_not_transactional() -> io::Result<()> {
   for mut reader in readers(b"A") {
     assert!(reader.read_utf8_string(2).is_err());
@@ -72,7 +76,8 @@ fn composite_string_reads_are_not_transactional() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn invalid_encoding_reports_other_after_consuming_the_field() -> io::Result<()> {
   for mut reader in readers(&[0xff, b'!']) {
     assert_eq!(
@@ -91,7 +96,8 @@ fn invalid_encoding_reports_other_after_consuming_the_field() -> io::Result<()> 
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn truncated_reads_keep_backend_specific_error_kinds() -> io::Result<()> {
   let mut bytes = BytesReader::new(&[1]);
   assert_eq!(bytes.read_u16_be().unwrap_err().kind(), ErrorKind::Other);
@@ -106,7 +112,8 @@ fn truncated_reads_keep_backend_specific_error_kinds() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn seek_beyond_end_is_backend_specific() -> io::Result<()> {
   let mut bytes = BytesReader::new(&[1]);
   assert_eq!(
@@ -126,7 +133,8 @@ fn seek_beyond_end_is_backend_specific() -> io::Result<()> {
 }
 
 #[cfg(feature = "util")]
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn util_strings_have_distinct_nul_and_lossy_semantics() -> io::Result<()> {
   let data = [b'?', 0x80, 0, 0xff, b'!'];
   assert_eq!(bin_rs::io::read_ascii_string(&data, 1, 3), "\u{80}\0ÿ");

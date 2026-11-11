@@ -18,7 +18,8 @@ fn readers(data: &[u8]) -> Vec<Box<dyn BinaryReader>> {
 
 macro_rules! integer_edges {
   ($name:ident, $ty:ty, $read:ident, $be:ident, $le:ident, [$($value:expr),+]) => {
-    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+    #[cfg_attr(not(target_arch = "wasm32"), test)]
     fn $name() -> io::Result<()> {
       for value in [$($value as $ty),+] {
         for endian in [Endian::BigEndian, Endian::LittleEndian] {
@@ -133,7 +134,8 @@ integer_edges!(
 
 macro_rules! float_edges {
   ($name:ident, $ty:ty, $bits:ty, $read:ident, $be:ident, $le:ident, [$($pattern:expr),+]) => {
-    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+    #[cfg_attr(not(target_arch = "wasm32"), test)]
     fn $name() -> io::Result<()> {
       for bits in [$($pattern as $bits),+] {
         let value = <$ty>::from_bits(bits);
@@ -193,7 +195,8 @@ float_edges!(
   ]
 );
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn byte_boundaries_and_empty_operations() -> io::Result<()> {
   for mut reader in readers(&[0, 127, 128, 255]) {
     assert_eq!(reader.read_u8()?, 0);
@@ -213,7 +216,8 @@ fn byte_boundaries_and_empty_operations() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn bytes_reader_failed_reads_preserve_offset_and_output() -> io::Result<()> {
   let mut reader = BytesReader::new(b"abc");
   assert_eq!(reader.read_u8()?, b'a');
@@ -229,7 +233,8 @@ fn bytes_reader_failed_reads_preserve_offset_and_output() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn seek_boundaries_and_rejected_seeks_preserve_offset() -> io::Result<()> {
   let mut reader = BytesReader::new(b"abc");
   assert_eq!(reader.seek(SeekFrom::End(0))?, 3);
@@ -255,7 +260,8 @@ fn seek_boundaries_and_rejected_seeks_preserve_offset() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn utf8_rejects_invalid_sequences_and_consumes_requested_field() -> io::Result<()> {
   for bytes in [
     &[0xff][..],
@@ -281,7 +287,8 @@ fn utf8_rejects_invalid_sequences_and_consumes_requested_field() -> io::Result<(
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn ascii_nul_stops_text_but_consumes_the_complete_field() -> io::Result<()> {
   for mut reader in readers(b"ab\0cd!") {
     assert_eq!(reader.read_ascii_string(5)?, "ab");
@@ -292,7 +299,8 @@ fn ascii_nul_stops_text_but_consumes_the_complete_field() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn utf16_surrogate_pairs_and_endian_restoration() -> io::Result<()> {
   for text in ["", "A\0B", "日本語", "a😀z"] {
     let units: Vec<_> = text.encode_utf16().collect();
@@ -314,7 +322,8 @@ fn utf16_surrogate_pairs_and_endian_restoration() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn utf16_invalid_surrogates_and_truncation_restore_endian() -> io::Result<()> {
   for bytes in [
     &[0xd8, 0x00][..],
@@ -340,7 +349,8 @@ fn utf16_invalid_surrogates_and_truncation_restore_endian() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn owned_input_and_clones_have_independent_positions() -> io::Result<()> {
   let mut source = vec![1, 2, 3];
   let mut reader = BytesReader::new(&source);
@@ -354,7 +364,8 @@ fn owned_input_and_clones_have_independent_positions() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn mixed_seek_peek_and_read_sequence_matches_slice_oracle() -> io::Result<()> {
   let data: Vec<u8> = (0u8..64).map(|n| n.wrapping_mul(37)).collect();
   for mut reader in readers(&data) {
@@ -397,7 +408,8 @@ fn mixed_seek_peek_and_read_sequence_matches_slice_oracle() -> io::Result<()> {
 }
 
 #[cfg(feature = "serde")]
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn bytes_conversion_respects_a_sliced_bytes_view() -> io::Result<()> {
   let bytes = bytes::Bytes::from_static(b"prefixDATAending").slice(6..10);
   let mut reader = BytesReader::from(bytes);

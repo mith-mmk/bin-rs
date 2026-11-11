@@ -3,7 +3,8 @@
 
 use bin_rs::io;
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn ascii_writer_is_utf8_plus_nul_not_the_inverse_byte_mapping() {
   for text in ["", "ASCII", "\u{e9}", "\u{65e5}\u{1f600}", "A\0B", "end\0"] {
     let mut bytes = vec![0xa5, 0x5a];
@@ -27,7 +28,8 @@ fn ascii_writer_is_utf8_plus_nul_not_the_inverse_byte_mapping() {
   }
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn u16_vector_widens_bytes_without_packing_and_drops_odd_tail() {
   let data: Vec<u8> = (0..=255).collect();
   for offset in [0, 1, 3] {
@@ -54,7 +56,8 @@ fn u16_vector_widens_bytes_without_packing_and_drops_odd_tail() {
   );
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn utf8_limits_count_bytes_and_invalid_prefix_returns_empty() {
   let text = "A\u{e9}\u{65e5}\u{1f600}";
   for offset in [0, 1, 3] {
@@ -74,7 +77,8 @@ fn utf8_limits_count_bytes_and_invalid_prefix_returns_empty() {
   assert_eq!(io::read_string(&[], 0, 0), "");
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn utf8_nul_ends_decoding_but_does_not_repair_invalid_prefix() {
   for (data, expected) in [
     (&b"A\0\xff"[..], "A"),

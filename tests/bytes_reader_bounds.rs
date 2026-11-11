@@ -1,7 +1,8 @@
 use bin_rs::reader::{BinaryReader, BytesReader};
 use std::io::{self, SeekFrom};
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn oversized_skip_is_an_error_without_moving() -> io::Result<()> {
   let mut reader = BytesReader::new(b"ab");
   reader.skip_ptr(1)?;
@@ -11,7 +12,8 @@ fn oversized_skip_is_an_error_without_moving() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn extreme_current_seek_is_an_error_without_moving() -> io::Result<()> {
   let mut reader = BytesReader::new(b"ab");
   reader.skip_ptr(1)?;
@@ -21,7 +23,8 @@ fn extreme_current_seek_is_an_error_without_moving() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn extreme_end_seek_is_an_error_without_moving() -> io::Result<()> {
   let mut reader = BytesReader::new(b"ab");
   assert!(reader.seek(SeekFrom::End(i64::MAX)).is_err());
@@ -30,7 +33,8 @@ fn extreme_end_seek_is_an_error_without_moving() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn extreme_lengths_are_rejected_by_each_bounded_operation() -> io::Result<()> {
   for length in [usize::MAX, usize::MAX - 1, usize::MAX - 2] {
     for data in [&b""[..], &b"abc"[..]] {
@@ -51,7 +55,8 @@ fn extreme_lengths_are_rejected_by_each_bounded_operation() -> io::Result<()> {
   Ok(())
 }
 
-#[test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
 fn signed_seek_extremes_and_valid_boundaries_work_in_all_profiles() -> io::Result<()> {
   for data in [&b""[..], &b"abc"[..]] {
     for offset in 0..=data.len() {

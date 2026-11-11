@@ -17,7 +17,8 @@ fn reader(data: &[u8], capacity: usize) -> AsyncBytesReader<BufReader<Cursor<Vec
 
 macro_rules! integer_edges {
     ($name:ident, $ty:ty, $read:ident, $be:ident, $le:ident, [$($value:expr),+]) => {
-        #[tokio::test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+        #[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
         async fn $name() -> TestResult {
             for value in [$($value),+] {
                 for endian in [Endian::BigEndian, Endian::LittleEndian] {
@@ -119,7 +120,8 @@ integer_edges!(
   ]
 );
 
-#[tokio::test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
 async fn byte_signed_and_unsigned_boundaries() -> TestResult {
   let mut input = reader(&[0, 127, 128, 255, 0, 127, 128, 255], 1);
   for expected in [0, 127, 128, 255] {
@@ -132,7 +134,8 @@ async fn byte_signed_and_unsigned_boundaries() -> TestResult {
   Ok(())
 }
 
-#[tokio::test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
 async fn partial_eof_reports_unexpected_eof_and_consumed_offset() -> TestResult {
   for capacity in [1, 2, 8] {
     let mut input = reader(b"abc", capacity);
@@ -160,7 +163,8 @@ async fn partial_eof_reports_unexpected_eof_and_consumed_offset() -> TestResult 
   Ok(())
 }
 
-#[tokio::test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
 async fn buffered_peek_repeats_without_consuming() -> TestResult {
   let mut input = reader(b"abcdef", 6);
   assert_eq!(input.read_u8().await?, b'a');
@@ -173,7 +177,8 @@ async fn buffered_peek_repeats_without_consuming() -> TestResult {
   Ok(())
 }
 
-#[tokio::test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
 async fn seek_and_skip_track_logical_offsets() -> TestResult {
   let mut input = reader(b"abcdefgh", 3);
   assert_eq!(input.skip_ptr(2).await?, 2);
@@ -192,7 +197,8 @@ async fn seek_and_skip_track_logical_offsets() -> TestResult {
   Ok(())
 }
 
-#[tokio::test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
 async fn empty_reads_and_skips_succeed_at_eof() -> TestResult {
   let mut input = reader(b"", 1);
   assert!(input.read_bytes_as_vec(0).await?.is_empty());
@@ -203,7 +209,8 @@ async fn empty_reads_and_skips_succeed_at_eof() -> TestResult {
   Ok(())
 }
 
-#[tokio::test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
 async fn strings_preserve_utf8_nul_but_ascii_stops_at_nul() -> TestResult {
   let mut input = reader("é\0猫!".as_bytes(), 1);
   assert_eq!(input.read_utf8_string(6).await?, "é\0猫");
@@ -217,7 +224,8 @@ async fn strings_preserve_utf8_nul_but_ascii_stops_at_nul() -> TestResult {
   Ok(())
 }
 
-#[tokio::test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
 async fn malformed_utf8_errors_after_consuming_the_field() -> TestResult {
   for data in [&[0xff, b'!'][..], &[0xc3, b'!'][..], &[0x80, b'!'][..]] {
     let mut input = reader(data, 1);
@@ -232,7 +240,8 @@ async fn malformed_utf8_errors_after_consuming_the_field() -> TestResult {
   Ok(())
 }
 
-#[tokio::test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
 async fn truncated_strings_report_unexpected_eof() -> TestResult {
   let mut input = reader(b"ab", 1);
   let error = input.read_utf8_string(3).await.unwrap_err();
@@ -253,7 +262,8 @@ async fn truncated_strings_report_unexpected_eof() -> TestResult {
 
 macro_rules! float_bits_edges {
     ($name:ident, $ty:ty, $read:ident, $be:ident, $le:ident, [$($bits:expr),+]) => {
-        #[tokio::test]
+        #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+        #[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
         async fn $name() -> TestResult {
             for bits in [$($bits),+] {
                 let value = <$ty>::from_bits(bits);
@@ -309,7 +319,8 @@ float_bits_edges!(
   ]
 );
 
-#[tokio::test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
 async fn exact_boundary_peek_should_succeed() -> TestResult {
   for capacity in [3, 8] {
     let mut input = reader(b"abc", capacity);
@@ -327,7 +338,8 @@ async fn exact_boundary_peek_should_succeed() -> TestResult {
   Ok(())
 }
 
-#[tokio::test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
 async fn zero_byte_peek_at_eof_should_succeed() -> TestResult {
   for data in [b"".as_slice(), b"abc".as_slice()] {
     let mut input = reader(data, 1);
@@ -366,7 +378,8 @@ impl AsyncBufRead for ErrorOnPoll {
   }
 }
 
-#[tokio::test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
 async fn empty_peek_does_not_poll_and_nonempty_peek_propagates_io_error() -> TestResult {
   fn assert_copy<T: Copy>(_: &T) {}
   let mut input = AsyncBytesReader::new(ErrorOnPoll);
@@ -381,7 +394,8 @@ async fn empty_peek_does_not_poll_and_nonempty_peek_propagates_io_error() -> Tes
   Ok(())
 }
 
-#[tokio::test]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), tokio::test)]
 async fn failed_window_peek_does_not_consume_or_change_offset() -> TestResult {
   let mut input = reader(b"abc", 3);
   assert_eq!(input.read_u8().await?, b'a');
