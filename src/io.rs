@@ -266,6 +266,10 @@ pub fn read_ascii_string(buf: &[u8], ptr: usize, num: usize) -> String {
   return String::from_utf16_lossy(&u16s);
 }
 
+/// Reads at most `num` bytes from byte offset `ptr` as UTF-8, stopping at NUL.
+/// Invalid UTF-8 before NUL returns an empty String, indistinguishable from
+/// valid empty text. A limit splitting a UTF-8 character is invalid UTF-8.
+/// Callers must supply a valid range; this is not a checked-slice API.
 #[allow(unused)]
 #[inline]
 pub fn read_string(buf: &[u8], ptr: usize, num: usize) -> String {
@@ -313,6 +317,10 @@ pub fn read_bytes_as_vec(buf: &[u8], ptr: usize, length: usize) -> Vec<u8> {
   c
 }
 
+/// Widens each of the first `2 * floor(length / 2)` bytes at `ptr` to u16.
+/// Does not combine byte pairs into words or decode UTF-16. An odd last byte
+/// is ignored; the output has `2 * floor(length / 2)` elements.
+/// Callers must supply a valid range. This legacy behavior is not corrected here.
 #[allow(unused)]
 #[inline]
 pub fn read_bytes_as_u16_vec(buf: &[u8], ptr: usize, length: usize) -> Vec<u16> {
@@ -561,6 +569,9 @@ pub fn write_i128_le(num: i128, buf: &mut Vec<u8>) {
   }
 }
 
+/// Appends the String's UTF-8 bytes and one additional NUL byte.
+/// Preserves embedded NULs and accepts non-ASCII text despite the name.
+/// Not the inverse of read_ascii_string, which maps individual bytes to code points.
 pub fn write_ascii_string(srting: String, buf: &mut Vec<u8>) {
   let bytes = srting.as_bytes();
   for b in bytes.into_iter() {
@@ -569,6 +580,7 @@ pub fn write_ascii_string(srting: String, buf: &mut Vec<u8>) {
   buf.push(0)
 }
 
+/// Appends UTF-8 bytes, including embedded NULs, without adding a terminator.
 #[allow(unused)]
 #[inline]
 pub fn write_string(srting: String, buf: &mut Vec<u8>) {

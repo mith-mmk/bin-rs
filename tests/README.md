@@ -99,3 +99,24 @@ using a locally generated compatible lock (Tokio 1.53.3, tokio-macros 2.7.2,
 bytes 1.12.1, serde 1.0.229). The lock is not published or committed; dependency
 ranges and the declared MSRV are unchanged. The separate async larger-window
 regression was rerun and still fails; no Wasm execution was performed here.
+
+## Util contract characterization
+
+`util_contract.rs` is enabled by `util` and records the existing UTF-8/NUL
+writer behavior, invalid-UTF-8 empty result, and byte-widening/odd-tail behavior
+of `read_bytes_as_u16_vec`. It does not fix these quirks or declare them final
+stable API decisions. Valid offset/range boundaries are tested without assigning
+an error contract to invalid ranges. See the util section of the contract baseline.
+
+```sh
+cargo test --features util --test util_contract
+cargo test --release --features util --test util_contract
+```
+
+Validation on Windows with Rust 1.99.0: default debug/release passed 47 tests
+and all-features debug/release passed 112, including doctests. The focused util
+suite passed four tests in both profiles. Rust 1.71.0 all-features also passed
+112 tests in both profiles using the locally generated compatible lock described
+above. Changed Rust files pass rustfmt checks and all-features rustdoc builds.
+Consumer suites, Wasm execution, and the separate known-failing async regression
+were not rerun for this documentation-and-test-only change.
